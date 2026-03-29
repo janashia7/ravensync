@@ -27,7 +27,7 @@ release-snapshot: clean
 	GOOS=darwin  GOARCH=arm64 go build $(LDFLAGS) -o dist/ravensync_darwin_arm64  ./cmd/ravensync
 	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o dist/ravensync_windows_amd64.exe ./cmd/ravensync
 	GOOS=windows GOARCH=arm64 go build $(LDFLAGS) -o dist/ravensync_windows_arm64.exe ./cmd/ravensync
-	@cd dist && for f in ravensync_linux_* ravensync_darwin_*; do tar czf "$$f.tar.gz" "$$f" && rm "$$f"; done
-	@cd dist && for f in ravensync_windows_*.exe; do zip "$${f%.exe}.zip" "$$f" && rm "$$f"; done
+	@cd dist && for f in ravensync_linux_* ravensync_darwin_*; do mv "$$f" ravensync && tar czf "$$f.tar.gz" ravensync && rm ravensync; done
+	@cd dist && for f in ravensync_windows_*.exe; do mv "$$f" ravensync.exe && zip "$${f%.exe}.zip" ravensync.exe && rm ravensync.exe; done
 	@echo "\nRelease artifacts in dist/:"
 	@ls -lh dist/
