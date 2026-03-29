@@ -28,12 +28,6 @@ curl -fsSL https://raw.githubusercontent.com/janashia7/ravensync/main/install.sh
 
 This auto-detects your OS/arch, downloads the latest release binary, and installs to `/usr/local/bin`.
 
-### Homebrew (macOS)
-
-```sh
-brew install ravensync/tap/ravensync
-```
-
 ### Go install
 
 Requires Go 1.26+:

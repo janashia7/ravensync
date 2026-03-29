@@ -1,0 +1,64 @@
+name: Auto Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Tag & Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version bump
+        id: bump
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+          COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"%s" 2>/dev/null || git log --pretty=format:"%s")
+
+          MAJOR=0
+          MINOR=0
+          PATCH=0
+
+          while IFS= read -r msg; do
+            if echo "$msg" | grep -qE '^[a-z]+(\(.+\))?!:' || echo "$msg" | grep -q 'BREAKING CHANGE'; then
+              MAJOR=1
+            elif echo "$msg" | grep -qE '^feat(\(.+\))?:'; then
+              MINOR=1
+            elif echo "$msg" | grep -qE '^fix(\(.+\))?:'; then
+              PATCH=1
+            fi
+          done <<< "$COMMITS"
+
+          if [ "$MAJOR" = "0" ] && [ "$MINOR" = "0" ] && [ "$PATCH" = "0" ]; then
+            echo "bump=none" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          VERSION="${LATEST_TAG#v}"
+          IFS='.' read -r CUR_MAJOR CUR_MINOR CUR_PATCH <<< "$VERSION"
+
+          if [ "$MAJOR" = "1" ]; then
+            NEW="$((CUR_MAJOR + 1)).0.0"
+          elif [ "$MINOR" = "1" ]; then
+            NEW="${CUR_MAJOR}.$((CUR_MINOR + 1)).0"
+          else
+            NEW="${CUR_MAJOR}.${CUR_MINOR}.$((CUR_PATCH + 1))"
+          fi
+
+          echo "bump=v${NEW}" >> $GITHUB_OUTPUT
+          echo "version=${NEW}" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        if: steps.bump.outputs.bump != 'none'
+        run: |
+          git tag ${{ steps.bump.outputs.bump }}
+          git push origin ${{ steps.bump.outputs.bump }}
