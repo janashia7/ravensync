@@ -101,7 +101,7 @@ func (c *Collector) Summary() string {
 func (c *Collector) Close() {
 	c.emit(Event{Type: "daemon_stop"})
 	if c.eventFile != nil {
-		c.eventFile.Close()
+		_ = c.eventFile.Close()
 	}
 }
 
@@ -114,5 +114,5 @@ func (c *Collector) emit(evt Event) {
 	defer c.mu.Unlock()
 	data, _ := json.Marshal(evt)
 	data = append(data, '\n')
-	c.eventFile.Write(data)
+	_, _ = c.eventFile.Write(data)
 }

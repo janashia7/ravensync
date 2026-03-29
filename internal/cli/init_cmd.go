@@ -57,7 +57,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		llmProvider    = "openai"
 		llmKey         string
 		llmModel       = "gpt-4o-mini"
-		embeddingModel = "text-embedding-3-small"
+		embeddingModel string
 	)
 
 	applyInitFlags(cmd, &telegramTok, &llmProvider, &llmKey, &llmModel)

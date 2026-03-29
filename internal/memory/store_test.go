@@ -12,26 +12,26 @@ func testKey() []byte {
 	return key
 }
 
-func TestNewStoreAndClose(t *testing.T) {
+func mustOpen(t *testing.T) *Store {
+	t.Helper()
 	dbPath := filepath.Join(t.TempDir(), "test.db")
 	store, err := NewStore(dbPath, testKey())
 	if err != nil {
 		t.Fatalf("NewStore: %v", err)
 	}
-	defer store.Close()
+	t.Cleanup(func() { _ = store.Close() })
+	return store
+}
 
+func TestNewStoreAndClose(t *testing.T) {
+	store := mustOpen(t)
 	if store.Count() != 0 {
 		t.Fatalf("empty store count = %d, want 0", store.Count())
 	}
 }
 
 func TestAddAndCount(t *testing.T) {
-	dbPath := filepath.Join(t.TempDir(), "test.db")
-	store, err := NewStore(dbPath, testKey())
-	if err != nil {
-		t.Fatalf("NewStore: %v", err)
-	}
-	defer store.Close()
+	store := mustOpen(t)
 
 	emb := []float64{0.1, 0.2, 0.3}
 	if err := store.Add("user1", "hello world", emb); err != nil {
@@ -50,16 +50,17 @@ func TestAddAndCount(t *testing.T) {
 }
 
 func TestSearchReturnsRelevant(t *testing.T) {
-	dbPath := filepath.Join(t.TempDir(), "test.db")
-	store, err := NewStore(dbPath, testKey())
-	if err != nil {
-		t.Fatalf("NewStore: %v", err)
-	}
-	defer store.Close()
+	store := mustOpen(t)
 
-	store.Add("user1", "my name is Giorgi", []float64{1.0, 0.0, 0.0})
-	store.Add("user1", "I like pizza", []float64{0.0, 1.0, 0.0})
-	store.Add("user1", "the weather is nice", []float64{0.0, 0.0, 1.0})
+	if err := store.Add("user1", "my name is Giorgi", []float64{1.0, 0.0, 0.0}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Add("user1", "I like pizza", []float64{0.0, 1.0, 0.0}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Add("user1", "the weather is nice", []float64{0.0, 0.0, 1.0}); err != nil {
+		t.Fatal(err)
+	}
 
 	results := store.Search("user1", []float64{1.0, 0.1, 0.0}, 2)
 	if len(results) != 2 {
@@ -71,15 +72,14 @@ func TestSearchReturnsRelevant(t *testing.T) {
 }
 
 func TestSearchDifferentUsers(t *testing.T) {
-	dbPath := filepath.Join(t.TempDir(), "test.db")
-	store, err := NewStore(dbPath, testKey())
-	if err != nil {
-		t.Fatalf("NewStore: %v", err)
-	}
-	defer store.Close()
+	store := mustOpen(t)
 
-	store.Add("alice", "alice data", []float64{1.0, 0.0})
-	store.Add("bob", "bob data", []float64{1.0, 0.0})
+	if err := store.Add("alice", "alice data", []float64{1.0, 0.0}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Add("bob", "bob data", []float64{1.0, 0.0}); err != nil {
+		t.Fatal(err)
+	}
 
 	results := store.Search("alice", []float64{1.0, 0.0}, 10)
 	if len(results) != 1 {
@@ -91,12 +91,7 @@ func TestSearchDifferentUsers(t *testing.T) {
 }
 
 func TestSearchEmptyStore(t *testing.T) {
-	dbPath := filepath.Join(t.TempDir(), "test.db")
-	store, err := NewStore(dbPath, testKey())
-	if err != nil {
-		t.Fatalf("NewStore: %v", err)
-	}
-	defer store.Close()
+	store := mustOpen(t)
 
 	results := store.Search("user1", []float64{1.0, 0.0}, 5)
 	if results != nil {
@@ -105,15 +100,12 @@ func TestSearchEmptyStore(t *testing.T) {
 }
 
 func TestSearchTopKLimit(t *testing.T) {
-	dbPath := filepath.Join(t.TempDir(), "test.db")
-	store, err := NewStore(dbPath, testKey())
-	if err != nil {
-		t.Fatalf("NewStore: %v", err)
-	}
-	defer store.Close()
+	store := mustOpen(t)
 
 	for i := 0; i < 10; i++ {
-		store.Add("user1", "data", []float64{1.0, float64(i)})
+		if err := store.Add("user1", "data", []float64{1.0, float64(i)}); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	results := store.Search("user1", []float64{1.0, 5.0}, 3)
@@ -168,14 +160,16 @@ func TestPersistenceAcrossReopen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewStore: %v", err)
 	}
-	store1.Add("user1", "persistent data", []float64{1.0, 0.0, 0.0})
-	store1.Close()
+	if err := store1.Add("user1", "persistent data", []float64{1.0, 0.0, 0.0}); err != nil {
+		t.Fatal(err)
+	}
+	_ = store1.Close()
 
 	store2, err := NewStore(dbPath, key)
 	if err != nil {
 		t.Fatalf("NewStore reopen: %v", err)
 	}
-	defer store2.Close()
+	t.Cleanup(func() { _ = store2.Close() })
 
 	if store2.Count() != 1 {
 		t.Fatalf("count after reopen = %d, want 1", store2.Count())
