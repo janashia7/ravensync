@@ -6,11 +6,15 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
-  release:
-    name: Tag & Release
+  bump:
+    name: Determine Version
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.bump.outputs.bump }}
+      version: ${{ steps.bump.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,3 +66,64 @@ jobs:
         run: |
           git tag ${{ steps.bump.outputs.bump }}
           git push origin ${{ steps.bump.outputs.bump }}
+
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    needs: bump
+    if: needs.bump.outputs.tag != 'none' && needs.bump.outputs.tag != ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build all platforms
+        run: make release-snapshot VERSION=${{ needs.bump.outputs.version }}
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum * > checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.bump.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            dist/*
+
+  docker:
+    name: Docker Image
+    runs-on: ubuntu-latest
+    needs: [bump, release]
+    if: needs.bump.outputs.tag != 'none' && needs.bump.outputs.tag != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=${{ needs.bump.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
