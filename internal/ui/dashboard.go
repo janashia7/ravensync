@@ -184,15 +184,16 @@ func (d Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	if d.focus == 0 {
+	switch d.focus {
+	case 0:
 		var cmd tea.Cmd
 		d.input, cmd = d.input.Update(msg)
 		cmds = append(cmds, cmd)
-	} else if d.focus == 1 {
+	case 1:
 		var cmd tea.Cmd
 		d.chat, cmd = d.chat.Update(msg)
 		cmds = append(cmds, cmd)
-	} else {
+	default:
 		var cmd tea.Cmd
 		d.events, cmd = d.events.Update(msg)
 		cmds = append(cmds, cmd)

@@ -44,12 +44,12 @@ func NewStore(dbPath string, encryptionKey []byte) (*Store, error) {
 	}
 
 	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("set journal mode: %w", err)
 	}
 
 	if err := migrate(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("migrate database: %w", err)
 	}
 
@@ -60,7 +60,7 @@ func NewStore(dbPath string, encryptionKey []byte) (*Store, error) {
 	}
 
 	if err := s.loadCache(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("load memory cache: %w", err)
 	}
 
@@ -86,7 +86,7 @@ func (s *Store) loadCache() error {
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var id, userID string

@@ -77,7 +77,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("open memory store: %w", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	var embedder memory.Embedder
 	var llmProvider llm.Provider
@@ -107,7 +107,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("create telegram connector: %w", err)
 	}
 
-	go tg.Start(ctx)
+	go func() {
+		if err := tg.Start(ctx); err != nil {
+			logger.Error("telegram connector stopped", "error", err)
+		}
+	}()
 
 	events.Emit(ui.Event{
 		Type:    ui.EventInfo,
@@ -131,7 +135,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 
 	collector.Close()
-	store.Close()
+	_ = store.Close()
 
 	return nil
 }

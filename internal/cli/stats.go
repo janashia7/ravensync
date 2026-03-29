@@ -38,7 +38,7 @@ func runStats(cmd *cobra.Command, args []string) error {
 		}
 		return fmt.Errorf("open events: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	days, _ := cmd.Flags().GetInt("days")
 	cutoff := time.Now().AddDate(0, 0, -days)

@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -57,8 +58,11 @@ func TestSaveAndLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("config file not created: %v", err)
 	}
-	if perm := info.Mode().Perm(); perm != 0600 {
-		t.Fatalf("config permissions = %o, want 0600", perm)
+
+	if runtime.GOOS != "windows" {
+		if perm := info.Mode().Perm(); perm != 0600 {
+			t.Fatalf("config permissions = %o, want 0600", perm)
+		}
 	}
 
 	loaded := DefaultConfig()
@@ -93,8 +97,9 @@ func TestLoadMissingFile(t *testing.T) {
 }
 
 func TestConfigPath(t *testing.T) {
-	cfg := &Config{DataDir: "/tmp/ravensync-test"}
-	expected := "/tmp/ravensync-test/config.yaml"
+	tmpDir := t.TempDir()
+	cfg := &Config{DataDir: tmpDir}
+	expected := filepath.Join(tmpDir, "config.yaml")
 	if got := ConfigPath(cfg); got != expected {
 		t.Fatalf("ConfigPath = %q, want %q", got, expected)
 	}
