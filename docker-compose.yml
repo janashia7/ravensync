@@ -1,0 +1,17 @@
+services:
+  ravensync:
+    build: .
+    container_name: ravensync
+    restart: unless-stopped
+    environment:
+      - RAVENSYNC_PASSWORD=${RAVENSYNC_PASSWORD}
+      - RAVENSYNC_TELEGRAM_TOKEN=${RAVENSYNC_TELEGRAM_TOKEN}
+      - RAVENSYNC_LLM_KEY=${RAVENSYNC_LLM_KEY:-}
+    volumes:
+      - ravensync-data:/root/.ravensync
+    # Uncomment if using Ollama on the host machine:
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+
+volumes:
+  ravensync-data:
