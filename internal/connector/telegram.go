@@ -249,7 +249,9 @@ func (tc *TelegramConnector) handleUpdate(ctx context.Context, update tgbotapi.U
 		if len(choices) > 0 {
 			tc.sendWithKeyboard(chatID, msg.MessageID, responseText, choices)
 		} else {
-			sendMarkdownV2(tc.bot, chatID, msg.MessageID, responseText)
+			if _, err := sendMarkdownV2(tc.bot, chatID, msg.MessageID, responseText); err != nil {
+				tc.logger.Debug("send markdown reply failed", "error", err)
+			}
 		}
 	}
 
@@ -343,7 +345,11 @@ func (tc *TelegramConnector) downloadImage(ctx context.Context, url string) ([]b
 	if err != nil {
 		return nil, "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			tc.logger.Debug("close http body", "error", cerr)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return nil, "", fmt.Errorf("http %d", resp.StatusCode)
 	}
@@ -375,7 +381,11 @@ func (tc *TelegramConnector) downloadTextFile(fileID, mimeType string) string {
 	if err != nil {
 		return ""
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			tc.logger.Debug("close http body", "error", cerr)
+		}
+	}()
 	if resp.ContentLength > 1024*1024 {
 		return ""
 	}
@@ -405,7 +415,9 @@ func (tc *TelegramConnector) keepTyping(ctx context.Context, chatID int64) {
 }
 
 func (tc *TelegramConnector) sendReply(chatID int64, replyTo int, text string) {
-	sendMarkdownV2(tc.bot, chatID, replyTo, text)
+	if _, err := sendMarkdownV2(tc.bot, chatID, replyTo, text); err != nil {
+		tc.logger.Debug("send reply failed", "error", err)
+	}
 }
 
 func (tc *TelegramConnector) sendPlain(chatID int64, replyTo int, text string) (tgbotapi.Message, error) {

@@ -120,6 +120,7 @@ Console / Telegram → connector → agent (embed → search → history + LLM) 
 ```sh
 make test
 make build
+make lint   # uses golangci-lint via go run (pinned in Makefile); first run may download modules
 ```
 
 ## License

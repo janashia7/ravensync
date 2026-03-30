@@ -159,24 +159,24 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 
 func buildConfigSummaryText(cfg *config.Config) string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("Path: %s\n", config.ConfigPath(cfg)))
-	b.WriteString(fmt.Sprintf("data_dir: %s\n", cfg.DataDir))
-	b.WriteString(fmt.Sprintf("llm_provider: %s\n", cfg.LLMProvider))
-	b.WriteString(fmt.Sprintf("llm_model: %s\n", cfg.LLMModel))
-	b.WriteString(fmt.Sprintf("embedding_model: %s\n", cfg.EmbeddingModel))
-	b.WriteString(fmt.Sprintf("telegram_token: %s\n", redactSecret(cfg.TelegramToken)))
-	b.WriteString(fmt.Sprintf("llm_api_key: %s\n", redactSecret(cfg.LLMAPIKey)))
+	_, _ = fmt.Fprintf(&b, "Path: %s\n", config.ConfigPath(cfg))
+	_, _ = fmt.Fprintf(&b, "data_dir: %s\n", cfg.DataDir)
+	_, _ = fmt.Fprintf(&b, "llm_provider: %s\n", cfg.LLMProvider)
+	_, _ = fmt.Fprintf(&b, "llm_model: %s\n", cfg.LLMModel)
+	_, _ = fmt.Fprintf(&b, "embedding_model: %s\n", cfg.EmbeddingModel)
+	_, _ = fmt.Fprintf(&b, "telegram_token: %s\n", redactSecret(cfg.TelegramToken))
+	_, _ = fmt.Fprintf(&b, "llm_api_key: %s\n", redactSecret(cfg.LLMAPIKey))
 	if len(cfg.AllowedUsers) > 0 {
-		b.WriteString(fmt.Sprintf("allowed_users: %v\n", cfg.AllowedUsers))
+		_, _ = fmt.Fprintf(&b, "allowed_users: %v\n", cfg.AllowedUsers)
 	}
 	if len(cfg.AllowedUsernames) > 0 {
-		b.WriteString(fmt.Sprintf("allowed_usernames: %v\n", cfg.AllowedUsernames))
+		_, _ = fmt.Fprintf(&b, "allowed_usernames: %v\n", cfg.AllowedUsernames)
 	}
 	if len(cfg.AllowedUsers) == 0 && len(cfg.AllowedUsernames) == 0 {
 		b.WriteString("allowlist: (everyone)\n")
 	}
 	if len(cfg.EncryptionSalt) > 0 {
-		b.WriteString(fmt.Sprintf("encryption_salt: (%d bytes, not editable here)\n", len(cfg.EncryptionSalt)))
+		_, _ = fmt.Fprintf(&b, "encryption_salt: (%d bytes, not editable here)\n", len(cfg.EncryptionSalt))
 	} else {
 		b.WriteString("encryption_salt: MISSING — run ravensync init\n")
 	}

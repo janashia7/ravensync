@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -104,7 +105,11 @@ func (p *OpenAIProvider) CompleteStream(ctx context.Context, messages []Message)
 	ch := make(chan StreamChunk, 32)
 	go func() {
 		defer close(ch)
-		defer stream.Close()
+		defer func() {
+			if cerr := stream.Close(); cerr != nil {
+				log.Printf("llm: stream close: %v", cerr)
+			}
+		}()
 		for {
 			resp, err := stream.Recv()
 			if errors.Is(err, io.EOF) {

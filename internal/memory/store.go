@@ -266,7 +266,9 @@ func (s *Store) Close() error {
 
 func generateID() string {
 	b := make([]byte, 16)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("id-%d", time.Now().UnixNano())
+	}
 	return fmt.Sprintf("%x", b)
 }
 

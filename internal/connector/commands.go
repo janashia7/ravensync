@@ -107,7 +107,7 @@ func cmdMemories(cc CommandContext) string {
 
 	recent := cc.Store.ListRecent(cc.UserID, 5)
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("You have %d memories. Most recent:\n\n", count))
+	_, _ = fmt.Fprintf(&sb, "You have %d memories. Most recent:\n\n", count)
 
 	for i, m := range recent {
 		preview := m.Content
@@ -115,7 +115,7 @@ func cmdMemories(cc CommandContext) string {
 			preview = preview[:120] + "..."
 		}
 		preview = strings.ReplaceAll(preview, "\n", " ")
-		sb.WriteString(fmt.Sprintf("%d. %s\n   %s\n\n", i+1, m.CreatedAt.Format("Jan 2 15:04"), preview))
+		_, _ = fmt.Fprintf(&sb, "%d. %s\n   %s\n\n", i+1, m.CreatedAt.Format("Jan 2 15:04"), preview)
 	}
 
 	return sb.String()

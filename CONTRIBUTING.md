@@ -76,7 +76,10 @@ User (Console / Telegram)
 make build       # build binary to bin/
 make install     # install to GOPATH/bin
 make test        # run all tests
+make lint        # golangci-lint via `go run` (pinned version in Makefile)
 ```
+
+Optional [pre-commit](https://pre-commit.com): `pip install pre-commit && pre-commit install` — runs `golangci-lint` on commit (see `.pre-commit-config.yaml`).
 
 ## Guidelines
 
