@@ -56,42 +56,42 @@ Restart `serve` after config changes. Numeric ID from [@userinfobot](https://t.m
 
 ## Configuration
 
-| YAML key | Environment | Purpose |
-|----------|-------------|---------|
-| `data_dir` | — | Data directory (default `~/.ravensync`) |
-| `encryption_salt` | — | Set by `init`; do not hand-edit |
-| `llm_provider` | — | `ollama` or any other label (non-`ollama` → OpenAI-compatible client) |
-| `llm_api_key` | `RAVENSYNC_LLM_KEY` | API key (omit for Ollama) |
-| `llm_model` | — | Chat model name |
-| `embedding_model` | — | Embedding model name |
-| `telegram_token` | `RAVENSYNC_TELEGRAM_TOKEN` | Bot token |
-| `allowed_users` | — | Optional Telegram user IDs |
-| `allowed_usernames` | — | Optional usernames without `@` |
-| — | `RAVENSYNC_PASSWORD` | Encryption password for `serve` |
+| YAML key            | Environment                | Purpose                                                               |
+| ------------------- | -------------------------- | --------------------------------------------------------------------- |
+| `data_dir`          | —                          | Data directory (default `~/.ravensync`)                               |
+| `encryption_salt`   | —                          | Set by `init`; do not hand-edit                                       |
+| `llm_provider`      | —                          | `ollama` or any other label (non-`ollama` → OpenAI-compatible client) |
+| `llm_api_key`       | `RAVENSYNC_LLM_KEY`        | API key (omit for Ollama)                                             |
+| `llm_model`         | —                          | Chat model name                                                       |
+| `embedding_model`   | —                          | Embedding model name                                                  |
+| `telegram_token`    | `RAVENSYNC_TELEGRAM_TOKEN` | Bot token                                                             |
+| `allowed_users`     | —                          | Optional Telegram user IDs                                            |
+| `allowed_usernames` | —                          | Optional usernames without `@`                                        |
+| —                   | `RAVENSYNC_PASSWORD`       | Encryption password for `serve`                                       |
 
 ## CLI
 
-| Command | Purpose |
-|---------|---------|
-| `ravensync init` | First-time setup |
-| `ravensync serve` | Run agent + TUI |
-| `ravensync doctor` | Validate config and connectivity |
-| `ravensync stats` | Memory / usage stats |
-| `ravensync config` | Interactive menu |
-| `ravensync config show` | Redacted config |
-| `ravensync config set` | Wizard or `--flags` |
-| `ravensync config allow-users` | Edit allowlist |
-| `ravensync version` | Version |
+| Command                        | Purpose                          |
+| ------------------------------ | -------------------------------- |
+| `ravensync init`               | First-time setup                 |
+| `ravensync serve`              | Run agent + TUI                  |
+| `ravensync doctor`             | Validate config and connectivity |
+| `ravensync stats`              | Memory / usage stats             |
+| `ravensync config`             | Interactive menu                 |
+| `ravensync config show`        | Redacted config                  |
+| `ravensync config set`         | Wizard or `--flags`              |
+| `ravensync config allow-users` | Edit allowlist                   |
+| `ravensync version`            | Version                          |
 
 ## Telegram commands
 
-| Command | Description |
-|---------|-------------|
-| `/start` | Intro |
-| `/help` | Commands |
-| `/stats` | Session / memory summary |
-| `/memories` | Recent memory previews |
-| `/forget` | Delete all memories for your Telegram user |
+| Command     | Description                                |
+| ----------- | ------------------------------------------ |
+| `/start`    | Intro                                      |
+| `/help`     | Commands                                   |
+| `/stats`    | Session / memory summary                   |
+| `/memories` | Recent memory previews                     |
+| `/forget`   | Delete all memories for your Telegram user |
 
 ## Ollama (local)
 
