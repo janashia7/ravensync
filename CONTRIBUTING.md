@@ -60,11 +60,11 @@ Layer 4 — Support
 ```
 User (Console / Telegram)
   → Connector receives message
-  → Agent.HandleMessage()
+  → Agent.HandleMessage / HandleMessageStream (text + optional images)
     → Embed user message (Embedder)
     → Search memory store (cosine similarity, top-K)
-    → Build LLM context: system prompt + memories + history + user msg
-    → Call LLM provider (Complete)
+    → Build LLM context: system prompt + memories + history + user turn
+    → Call LLM provider (Complete or stream; vision turns use Complete)
     → Store conversation as encrypted memory
     → Return response
   → Connector sends reply

@@ -1,9 +1,12 @@
 package cli
 
 import (
-	"crypto/rand"
 	"fmt"
 	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
@@ -22,6 +25,7 @@ var initCmd = &cobra.Command{
 
 func init() {
 	initCmd.Flags().String("telegram-token", "", "Telegram bot token (skip prompt)")
+	initCmd.Flags().String("allowed-users", "", "Telegram allowlist: comma-separated numeric IDs and/or @usernames (skip prompt; same as init field)")
 	initCmd.Flags().String("llm-key", "", "LLM API key (skip prompt)")
 	initCmd.Flags().String("llm-provider", "", "LLM provider (skip prompt)")
 	initCmd.Flags().String("llm-model", "", "Chat model name (skip prompt)")
@@ -31,18 +35,40 @@ func runInit(cmd *cobra.Command, args []string) error {
 	cfg := config.DefaultConfig()
 
 	if _, err := os.Stat(config.ConfigPath(cfg)); err == nil {
-		var overwrite bool
-		err := huh.NewConfirm().
-			Title("Config already exists").
-			Description(fmt.Sprintf("Found existing config at %s", config.ConfigPath(cfg))).
-			Affirmative("Overwrite").
-			Negative("Cancel").
-			Value(&overwrite).
-			WithTheme(ravenTheme()).
-			Run()
-		if err != nil || !overwrite {
-			fmt.Println("Aborted.")
-			return nil
+		dbPath := filepath.Join(cfg.DataDir, "memory.db")
+		if info, statErr := os.Stat(dbPath); statErr == nil && info.Size() > 0 {
+			var confirm bool
+			err := huh.NewConfirm().
+				Title("WARNING: Existing memories will become unreadable").
+				Description(fmt.Sprintf(
+					"Found memory.db (%s) encrypted with the current salt.\n"+
+						"Re-initializing generates a NEW encryption salt.\n"+
+						"Your existing memories CANNOT be decrypted after this.",
+					humanSize(info.Size()),
+				)).
+				Affirmative("I understand, continue").
+				Negative("Cancel").
+				Value(&confirm).
+				WithTheme(ravenTheme()).
+				Run()
+			if err != nil || !confirm {
+				fmt.Println("Aborted.")
+				return nil
+			}
+		} else {
+			var overwrite bool
+			err := huh.NewConfirm().
+				Title("Config already exists").
+				Description(fmt.Sprintf("Found existing config at %s", config.ConfigPath(cfg))).
+				Affirmative("Overwrite").
+				Negative("Cancel").
+				Value(&overwrite).
+				WithTheme(ravenTheme()).
+				Run()
+			if err != nil || !overwrite {
+				fmt.Println("Aborted.")
+				return nil
+			}
 		}
 	}
 
@@ -51,16 +77,17 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 
 	var (
-		password       string
-		confirmPw      string
-		telegramTok    string
-		llmProvider    = "openai"
-		llmKey         string
-		llmModel       = "gpt-4o-mini"
-		embeddingModel string
+		password         string
+		confirmPw        string
+		telegramTok      string
+		allowlistStr     string
+		llmProvider      = "openai"
+		llmKey           string
+		llmModel         = "gpt-4o-mini"
+		embeddingModel   string
 	)
 
-	applyInitFlags(cmd, &telegramTok, &llmProvider, &llmKey, &llmModel)
+	applyInitFlags(cmd, &telegramTok, &allowlistStr, &llmProvider, &llmKey, &llmModel)
 
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -98,6 +125,16 @@ func runInit(cmd *cobra.Command, args []string) error {
 				Description("Create a bot via @BotFather on Telegram.\nLeave empty to configure later.").
 				Placeholder("paste token here or press Enter to skip").
 				Value(&telegramTok),
+
+			huh.NewInput().
+				Title("Allowed Telegram users").
+				Description("Comma-separated: numeric user IDs and/or @usernames (e.g. 123456789, @yourusername).\nGet numeric ID from @userinfobot. Leave empty to allow everyone.").
+				Placeholder("e.g. 123456789, @yourusername").
+				Validate(func(s string) error {
+					_, _, err := parseTelegramAllowlist(s)
+					return err
+				}).
+				Value(&allowlistStr),
 		).Title("Telegram"),
 
 		huh.NewGroup(
@@ -178,10 +215,13 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to derive encryption key")
 	}
 
-	ownerID := make([]byte, 8)
-	rand.Read(ownerID)
+	allowedUsers, allowedUsernames, err := parseTelegramAllowlist(allowlistStr)
+	if err != nil {
+		return err
+	}
 
-	cfg.OwnerID = fmt.Sprintf("owner:%x", ownerID)
+	cfg.AllowedUsers = allowedUsers
+	cfg.AllowedUsernames = allowedUsernames
 	cfg.EncryptionSalt = salt
 	cfg.TelegramToken = telegramTok
 	cfg.LLMProvider = llmProvider
@@ -203,6 +243,15 @@ func runInit(cmd *cobra.Command, args []string) error {
 		printWarn("Telegram token not set — add later via config or RAVENSYNC_TELEGRAM_TOKEN")
 		needsAttention = true
 	}
+	if len(cfg.AllowedUsers) > 0 {
+		printOK("Allowed Telegram user IDs: %v", cfg.AllowedUsers)
+	}
+	if len(cfg.AllowedUsernames) > 0 {
+		printOK("Allowed Telegram usernames: %v", cfg.AllowedUsernames)
+	}
+	if len(cfg.AllowedUsers) == 0 && len(cfg.AllowedUsernames) == 0 {
+		printNote("No user whitelist — bot will respond to all users")
+	}
 	if cfg.LLMAPIKey == "" && cfg.LLMProvider != "ollama" {
 		printWarn("API key not set — add later via config or RAVENSYNC_LLM_KEY")
 		needsAttention = true
@@ -223,9 +272,51 @@ func runInit(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func applyInitFlags(cmd *cobra.Command, telegramTok, llmProvider, llmKey, llmModel *string) {
+// Telegram usernames: 5–32 chars, [a-zA-Z0-9_], must start with a letter (Telegram rules).
+var telegramUsernamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]{4,31}$`)
+
+func parseTelegramAllowlist(s string) ([]int64, []string, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil, nil, nil
+	}
+	var ids []int64
+	var names []string
+	seenID := make(map[int64]struct{})
+	seenName := make(map[string]struct{})
+
+	for _, raw := range strings.Split(s, ",") {
+		p := strings.TrimSpace(raw)
+		if p == "" {
+			continue
+		}
+		if id, err := strconv.ParseInt(p, 10, 64); err == nil && id > 0 {
+			if _, ok := seenID[id]; !ok {
+				seenID[id] = struct{}{}
+				ids = append(ids, id)
+			}
+			continue
+		}
+		u := strings.TrimPrefix(strings.TrimSpace(p), "@")
+		u = strings.TrimSpace(u)
+		if !telegramUsernamePattern.MatchString(u) {
+			return nil, nil, fmt.Errorf("%q is not a valid Telegram user ID or username (use @name or digits)", p)
+		}
+		lower := strings.ToLower(u)
+		if _, ok := seenName[lower]; !ok {
+			seenName[lower] = struct{}{}
+			names = append(names, lower)
+		}
+	}
+	return ids, names, nil
+}
+
+func applyInitFlags(cmd *cobra.Command, telegramTok, allowlistStr, llmProvider, llmKey, llmModel *string) {
 	if v, _ := cmd.Flags().GetString("telegram-token"); v != "" {
 		*telegramTok = v
+	}
+	if v, _ := cmd.Flags().GetString("allowed-users"); v != "" {
+		*allowlistStr = v
 	}
 	if v, _ := cmd.Flags().GetString("llm-provider"); v != "" {
 		*llmProvider = v

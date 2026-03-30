@@ -48,7 +48,7 @@ func (t EventType) Label() string {
 type Event struct {
 	Time       time.Time
 	Type       EventType
-	UserID     string // display name (e.g. "tg:janashia7")
+	UserID     string // display name (e.g. "tg:alice")
 	InternalID string // actual memory key (e.g. "tg:123456789")
 	Message    string
 	Latency    time.Duration

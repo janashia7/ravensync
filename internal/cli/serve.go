@@ -102,7 +102,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	tg, err := connector.NewTelegramConnector(cfg.TelegramToken, cfg.OwnerID, ag.HandleMessage, logger, events)
+	tg, err := connector.NewTelegramConnector(cfg.TelegramToken, cfg.AllowedUsers, cfg.AllowedUsernames, ag, logger, events)
 	if err != nil {
 		return fmt.Errorf("create telegram connector: %w", err)
 	}
@@ -123,10 +123,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 		Provider:    cfg.LLMProvider,
 		MemoryCount: store.Count(),
 		EventCh:     events.Subscribe(),
-		Handler:     ag.HandleMessage,
-		Ctx:         ctx,
+		Handler: func(ctx context.Context, userID, text string) (string, error) {
+			return ag.HandleMessage(ctx, userID, text, nil)
+		},
+		Ctx: ctx,
 		Cancel:      cancel,
-		LocalUserID: cfg.OwnerID,
+		LocalUserID: "console",
 	})
 
 	p := tea.NewProgram(dashboard, tea.WithAltScreen())

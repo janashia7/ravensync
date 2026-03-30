@@ -9,9 +9,10 @@ import (
 )
 
 type Config struct {
-	DataDir        string `yaml:"data_dir"`
-	OwnerID        string `yaml:"owner_id,omitempty"`
-	TelegramToken  string `yaml:"telegram_token,omitempty"`
+	DataDir            string   `yaml:"data_dir"`
+	AllowedUsers       []int64  `yaml:"allowed_users,omitempty"`
+	AllowedUsernames   []string `yaml:"allowed_usernames,omitempty"` // without @, lowercase in file is fine
+	TelegramToken      string   `yaml:"telegram_token,omitempty"`
 	LLMProvider    string `yaml:"llm_provider"`
 	LLMAPIKey      string `yaml:"llm_api_key,omitempty"`
 	LLMModel       string `yaml:"llm_model"`
