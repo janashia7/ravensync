@@ -52,7 +52,7 @@ func TestAddAndCount(t *testing.T) {
 func TestSearchReturnsRelevant(t *testing.T) {
 	store := mustOpen(t)
 
-	if err := store.Add("user1", "my name is Giorgi", []float64{1.0, 0.0, 0.0}); err != nil {
+	if err := store.Add("user1", "my name is Alex", []float64{1.0, 0.0, 0.0}); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.Add("user1", "I like pizza", []float64{0.0, 1.0, 0.0}); err != nil {
@@ -66,8 +66,8 @@ func TestSearchReturnsRelevant(t *testing.T) {
 	if len(results) != 2 {
 		t.Fatalf("search returned %d results, want 2", len(results))
 	}
-	if results[0].Content != "my name is Giorgi" {
-		t.Fatalf("top result = %q, want 'my name is Giorgi'", results[0].Content)
+	if results[0].Content != "my name is Alex" {
+		t.Fatalf("top result = %q, want 'my name is Alex'", results[0].Content)
 	}
 }
 

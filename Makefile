@@ -1,7 +1,9 @@
-.PHONY: build install clean test release-snapshot docker
+.PHONY: build install clean test lint release-snapshot docker
 
 VERSION ?= 0.1.0-dev
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+# Keep in sync with .github/workflows/ci.yml and .pre-commit-config.yaml
+GOLANGCI_LINT_VERSION ?= v2.11.4
 LDFLAGS  = -ldflags "-s -w -X github.com/ravensync/ravensync/internal/cli.Version=$(VERSION) -X github.com/ravensync/ravensync/internal/cli.Commit=$(COMMIT)"
 
 build:
@@ -15,6 +17,9 @@ clean:
 
 test:
 	go test ./...
+
+lint:
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run ./...
 
 docker:
 	docker build -t ravensync:$(VERSION) .

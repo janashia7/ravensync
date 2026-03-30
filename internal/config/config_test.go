@@ -42,7 +42,7 @@ func TestSaveAndLoad(t *testing.T) {
 
 	cfg := &Config{
 		DataDir:        tmpDir,
-		OwnerID:        "test-owner-123",
+		AllowedUsers:   []int64{123456789, 987654321},
 		LLMProvider:    "ollama",
 		LLMModel:       "llama3",
 		EmbeddingModel: "nomic-embed-text",
@@ -76,8 +76,8 @@ func TestSaveAndLoad(t *testing.T) {
 		t.Fatalf("unmarshal: %v", err)
 	}
 
-	if loaded.OwnerID != "test-owner-123" {
-		t.Fatalf("owner_id = %q, want test-owner-123", loaded.OwnerID)
+	if len(loaded.AllowedUsers) != 2 || loaded.AllowedUsers[0] != 123456789 {
+		t.Fatalf("allowed_users = %v, want [123456789 987654321]", loaded.AllowedUsers)
 	}
 	if loaded.LLMProvider != "ollama" {
 		t.Fatalf("provider = %q, want ollama", loaded.LLMProvider)

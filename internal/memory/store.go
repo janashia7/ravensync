@@ -216,13 +216,59 @@ func (s *Store) Count() int {
 	return total
 }
 
+func (s *Store) CountUser(userID string) int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.cache[userID])
+}
+
+func (s *Store) ListRecent(userID string, n int) []Memory {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	mems := s.cache[userID]
+	if len(mems) == 0 {
+		return nil
+	}
+
+	start := len(mems) - n
+	if start < 0 {
+		start = 0
+	}
+
+	out := make([]Memory, 0, n)
+	for _, m := range mems[start:] {
+		out = append(out, Memory{
+			ID:        m.ID,
+			UserID:    userID,
+			Content:   m.Content,
+			CreatedAt: m.CreatedAt,
+		})
+	}
+	return out
+}
+
+func (s *Store) DeleteUser(userID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	_, err := s.db.Exec("DELETE FROM memories WHERE user_id = ?", userID)
+	if err != nil {
+		return fmt.Errorf("delete user memories: %w", err)
+	}
+	delete(s.cache, userID)
+	return nil
+}
+
 func (s *Store) Close() error {
 	return s.db.Close()
 }
 
 func generateID() string {
 	b := make([]byte, 16)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("id-%d", time.Now().UnixNano())
+	}
 	return fmt.Sprintf("%x", b)
 }
 

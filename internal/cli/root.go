@@ -44,6 +44,7 @@ func printHelp() {
 	fmt.Println("    " + cliHighlight.Render("ravensync serve") + cliSubtle.Render("      Start the agent with TUI dashboard"))
 	fmt.Println("    " + cliHighlight.Render("ravensync doctor") + cliSubtle.Render("     Check config and dependencies"))
 	fmt.Println("    " + cliHighlight.Render("ravensync stats") + cliSubtle.Render("      Show usage statistics"))
+	fmt.Println("    " + cliHighlight.Render("ravensync config") + cliSubtle.Render("     Interactive menu (or show / set / allow-users)"))
 	fmt.Println("    " + cliHighlight.Render("ravensync version") + cliSubtle.Render("    Print version info"))
 	fmt.Println()
 	fmt.Println(cliSubtle.Render("  Run any command with --help for more details."))

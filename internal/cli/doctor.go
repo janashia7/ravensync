@@ -54,6 +54,17 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		printOK("Telegram token configured")
 	}
 
+	if len(cfg.AllowedUsers) > 0 || len(cfg.AllowedUsernames) > 0 {
+		if len(cfg.AllowedUsers) > 0 {
+			printOK("Allowed user IDs: %v", cfg.AllowedUsers)
+		}
+		if len(cfg.AllowedUsernames) > 0 {
+			printOK("Allowed usernames: %v", cfg.AllowedUsernames)
+		}
+	} else {
+		printNote("No user whitelist — bot will respond to all users")
+	}
+
 	if cfg.LLMAPIKey == "" {
 		if cfg.LLMProvider == "ollama" {
 			printOK("LLM: %s / %s (local)", cfg.LLMProvider, cfg.LLMModel)
